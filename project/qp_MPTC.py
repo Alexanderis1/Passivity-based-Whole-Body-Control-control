@@ -14,7 +14,7 @@ class QPSolver:
         self.x = self.opti.variable(self.n_vars)            
 
 
-                      ## self.x = np.hstack(wrench, tau)  differrent than in the paper , where are  switched 
+                     
 
     
         self.Tu = self.opti.parameter(self.task_dim,self.n_vars)
@@ -29,19 +29,19 @@ class QPSolver:
 
 
         self.limit=self.opti.parameter(n_actuated)   # number of actuated jointy
-        self.opti.subject_to(self.x[num_contact:] <= self.limit )
-        self.opti.subject_to(self.x[num_contact:] >= -self.limit)
+        self.opti.subject_to(self.x[:n_actuated] <= self.limit )
+        self.opti.subject_to(self.x[:n_actuated] >= -self.limit)
         if self.n_ineq_constraints > 0:
             if num_contact ==  12 :
              m = num_contact // 2
              self.A_ineq_ = self.opti.parameter(self.n_ineq_constraints, m)
              self.b_ineq_ = self.opti.parameter(self.n_ineq_constraints)
-             self.opti.subject_to(self.A_ineq_ @ self.x[:m] <= self.b_ineq_)
-             self.opti.subject_to(self.A_ineq_ @ self.x[m :num_contact] <= self.b_ineq_)
+             self.opti.subject_to(self.A_ineq_ @ self.x[-m:] <= self.b_ineq_)
+             self.opti.subject_to(self.A_ineq_ @ self.x[-num_contact :-m] <= self.b_ineq_)
             else :
                  self.A_ineq_ = self.opti.parameter(self.n_ineq_constraints, m)
                  self.b_ineq_ = self.opti.parameter(self.n_ineq_constraints)
-                 self.opti.subject_to(self.A_ineq_ @ self.x[:num_contact] <= self.b_ineq_)
+                 self.opti.subject_to(self.A_ineq_ @ self.x[-num_contact:] <= self.b_ineq_)
 
         else:
             self.A_ineq_ = None

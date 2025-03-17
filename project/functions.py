@@ -53,3 +53,16 @@ def joint_torque_limit(robot):
            limit[i-6]=effort_limit
         return limit
           
+
+
+
+def create_U(support,foot_id,n_act,Jdot):
+    S=np.hstack(np.zeros((n_act,6)),np.eye(n_act))     #S= 24 x 30 
+    if support == 'ds':
+        LEE=np.hstack(Jdot['lfoot'].T,Jdot['lfoot'].T)      
+    elif foot_id == 'lfoot' :
+        LEE=Jdot['lfoot'].T
+    else :
+       LEE=Jdot['rfoot'].T
+    return np.hstack(S,LEE.T)
+    
