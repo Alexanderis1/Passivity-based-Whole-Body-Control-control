@@ -9,12 +9,22 @@ import inverse_dynamics as id
 import filter
 import foot_trajectory_generator as ftg
 from logger import Logger
+from function_pinocchio import *
 
 class Hrp4Controller(dart.gui.osg.RealTimeWorldNode):
     def __init__(self, world, hrp4):
         super(Hrp4Controller, self).__init__(world)
         self.world = world
         self.hrp4 = hrp4
+
+
+
+        # inizialize pinocchio model 
+        self.pino = Coriolis_with_pionocchio()     # or  self.pino = Coriolis_with_pionocchio(1) 
+                                                   #if want visualize with meshcat
+                                              
+        #################################
+
         self.time = 0
         self.params = {
             'g': 9.81,
@@ -123,6 +133,14 @@ class Hrp4Controller(dart.gui.osg.RealTimeWorldNode):
         # initialize logger and plots
         self.logger = Logger(self.initial)
         self.logger.initialize_plot(frequency=10)
+
+       
+        
+
+
+
+
+
         
     def customPreStep(self):
         # create current and desired states
@@ -165,6 +183,7 @@ class Hrp4Controller(dart.gui.osg.RealTimeWorldNode):
         for link in ['torso', 'base']:
             for key in ['pos', 'vel', 'acc']:
                 self.desired[link][key] = (self.desired['lfoot'][key][:3] + self.desired['rfoot'][key][:3]) / 2.
+
 
         # get torque commands using inverse dynamics
         commands = self.id.get_joint_torques(self.desired, self.current, contact) 
@@ -223,6 +242,14 @@ class Hrp4Controller(dart.gui.osg.RealTimeWorldNode):
             zmp[0] = np.clip(zmp[0], midpoint[0] - 0.3, midpoint[0] + 0.3)
             zmp[1] = np.clip(zmp[1], midpoint[1] - 0.3, midpoint[1] + 0.3)
             zmp[2] = np.clip(zmp[2], midpoint[2] - 0.3, midpoint[2] + 0.3)
+       
+        Coriolis=self.pino.compute_C(self.hrp4)
+      
+        print(Coriolis)
+        v=self.hrp4.getVelocities()
+
+        assert np.amax( Coriolis@v - self.hrp4.getCoriolisForces()) <= 1e-10 ,  "the coriolis term is different, there must be some error in computation" #just to be sure
+
 
         # create state dict
         return {
@@ -246,7 +273,8 @@ class Hrp4Controller(dart.gui.osg.RealTimeWorldNode):
                       'acc': np.zeros(self.params['dof'])},
             'zmp'  : {'pos': zmp,
                       'vel': np.zeros(3),
-                      'acc': np.zeros(3)}
+                      'acc': np.zeros(3)},
+            'Coriolis_matrix' : {'C':Coriolis}
         }
 
 if __name__ == "__main__":
