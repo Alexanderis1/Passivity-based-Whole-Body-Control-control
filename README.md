@@ -20,3 +20,6 @@ Update the summarized methods and the actual implementation
 Notion links:
  MPTC:
  https://marred-pizza-2fb.notion.site/MPTC-Modular-Passive-Tracking-Controller-for-stack-of-tasks-based-control-frameworks-19fbdb3887ff80c49adaff3c1f9e6ba4?pvs=4
+
+Lib use:
+dartpy, casadi, pinocchio, meshcat
