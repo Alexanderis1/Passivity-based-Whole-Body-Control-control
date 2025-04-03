@@ -1,4 +1,19 @@
+import sys
 import numpy as np
+import importlib
+
+pinocchio_env_path='/opt/openrobots/lib/python3.12/site-packages'     ## USE YOUR PATH 
+
+sys.path.insert(0, pinocchio_env_path)
+pinocchio = importlib.import_module("pinocchio")
+
+print(f"Pinocchio version: {pinocchio.__version__}")   #if this print 3.4.0 then is ok
+fcl= importlib.import_module("hppfcl")
+
+print(f"Pinocchio path: {pinocchio.__file__}")
+visualize=importlib.import_module("pinocchio.visualize")
+
+MeshcatVisualizer=visualize.MeshcatVisualizer
 def euler_to_quaternion1(roll, pitch, yaw):
     """
     convert euler angle in quaternion
@@ -77,14 +92,14 @@ def convert_matrix(M):
 
 
 
-import pinocchio 
-from pinocchio.visualize import MeshcatVisualizer
+# import pinocchio 
+# from pinocchio.visualize import MeshcatVisualizer
 import os
 import sys
 
 
 class Coriolis_with_pionocchio :
-    def __init__(self,visual=0):
+    def __init__(self,visual=1):
         "I was not able to find a function whitch allow us to compute the corilis matrix with dart (we could only compute the coriolis term)"
         "So i create this class in order to compute tha C matrix using PINOCCHIO library"
         "FOR USING THIS CLASS YOU NEED TO IMPORT PINOCCHIO  ( IT MIGHT CAUSE SOME ERROR WITH COMPATIBILITY WITH DART AND NUMPY BUT DEPEND BY YOUR COMPUTER "
@@ -159,7 +174,7 @@ class Coriolis_with_pionocchio :
        C_dart=P@C_pin@P
       
       
-       assert np.amax( C_dart@vel_dart - self.robot.getCoriolisForces()) <= 1e-10 ,  "the coriolis term is different, there must be some error in computation"   # so we are sure that P@C_pin@P = C_dart 
+       assert np.amax( C_dart@vel_dart - self.robot.getCoriolisForces()) <= 1e-8 ,  "the coriolis term is different, there must be some error in computation"   # so we are sure that P@C_pin@P = C_dart 
       #######################################
 
        

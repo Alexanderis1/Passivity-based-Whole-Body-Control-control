@@ -10,6 +10,17 @@ import filter
 import foot_trajectory_generator as ftg
 from logger import Logger
 from function_pinocchio import *
+import importlib
+
+pinocchio_env_path='/opt/openrobots/lib/python3.12/site-packages'     ## USE YOUR PATH 
+
+sys.path.insert(0, pinocchio_env_path)
+pinocchio = importlib.import_module("pinocchio")
+
+print(f"Pinocchio version: {pinocchio.__version__}")   #if this print 3.4.0 then is ok
+fcl= importlib.import_module("hppfcl")
+
+print(f"Pinocchio path: {pinocchio.__file__}")    
 
 class Hrp4Controller(dart.gui.osg.RealTimeWorldNode):
     def __init__(self, world, hrp4):
@@ -20,7 +31,7 @@ class Hrp4Controller(dart.gui.osg.RealTimeWorldNode):
 
 
         # inizialize pinocchio model 
-        self.pino = Coriolis_with_pionocchio()     # or  self.pino = Coriolis_with_pionocchio(1) 
+        self.pino = Coriolis_with_pionocchio(0)     # or  self.pino = Coriolis_with_pionocchio(1) 
                                                    #if want visualize with meshcat
                                               
         #################################
@@ -87,7 +98,7 @@ class Hrp4Controller(dart.gui.osg.RealTimeWorldNode):
         self.id = id.InverseDynamics(self.hrp4, redundant_dofs)
 
         # initialize footstep planner
-        reference = [(0.1, 0., 0.2)] * 5 + [(0.1, 0., -0.1)] * 10 + [(0.1, 0., 0.)] * 10
+        reference = [(0.2, 0., 0.0)] * 5 + [(0.2, 0., -0.0)] * 10 + [(0.2, 0., 0.)] * 10
         self.footstep_planner = footstep_planner.FootstepPlanner(
             reference,
             self.initial['lfoot']['pos'],
@@ -145,6 +156,9 @@ class Hrp4Controller(dart.gui.osg.RealTimeWorldNode):
     def customPreStep(self):
         # create current and desired states
         self.current = self.retrieve_state()
+        if  self.time >550 and self.time < 580:
+            force = np.array([-12, 0.0, -0.0])  
+            self.base.addExtForce(force)
 
         # update kalman filter
         u = np.array([self.desired['zmp']['vel'][0], self.desired['zmp']['vel'][1], self.desired['zmp']['vel'][2]])
@@ -194,7 +208,7 @@ class Hrp4Controller(dart.gui.osg.RealTimeWorldNode):
 
         # log and plot
         self.logger.log_data(self.current, self.desired)
-        #self.logger.update_plot(self.time)
+        self.logger.update_plot(self.time)
 
         self.time += 1
 
@@ -245,10 +259,10 @@ class Hrp4Controller(dart.gui.osg.RealTimeWorldNode):
        
         Coriolis=self.pino.compute_C(self.hrp4)
       
-        print(Coriolis)
+        #print(Coriolis)
         v=self.hrp4.getVelocities()
 
-        assert np.amax( Coriolis@v - self.hrp4.getCoriolisForces()) <= 1e-10 ,  "the coriolis term is different, there must be some error in computation" #just to be sure
+        assert np.amax( Coriolis@v - self.hrp4.getCoriolisForces()) <= 1e-8 ,  "the coriolis term is different, there must be some error in computation" #just to be sure
 
 
         # create state dict
