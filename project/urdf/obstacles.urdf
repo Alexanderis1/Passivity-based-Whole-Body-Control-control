@@ -1,28 +1,7 @@
-<?xml version="1.0"?>
-<robot name="ground_skeleton">
-    <link name="world" />
-    <link name="ground_link">
-        <inertial>
-            <mass value="1.0" />
-            <origin xyz="0 0 0" rpy="0 0 0" />
-            <inertia ixx="1.0" ixy="0" ixz="0" iyy="1.0" iyz="0" izz="1.0" />
-        </inertial>
-        <visual>             
-            <origin xyz="0 0 0" rpy="0 0 0" />
-            <material name="green"><color rgba="0.7 0.7 0.7 1"/></material>
-            <geometry>
-                <box size="10 10 1" />
-                <color rgba="0.99 0.99 0.7 1"/> 
-            </geometry>
-        </visual> 
-        <collision>
-            <origin xyz="0 0 0" rpy="0 0 0" />
-            <geometry>
-                <box size="10 10 1" />
-            </geometry>
-        </collision>
-    </link>
-        <link name="s_0">
+<?xml version="1.0" ?>
+<robot name="stairs">
+    <link name="world"/>
+    <link name="s_0">
         <inertial>
             <origin xyz="0.1 0.0 0.0125" rpy="0.0 0.0 0.0"/>
             <mass value="1"/>
@@ -31,13 +10,13 @@
         <visual>
             <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
             <geometry>
-                <box size="0.3 0.3 0.015"/>
+                <box size="0.045 0.3 0.015"/>
             </geometry>
         </visual>
         <collision>
             <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
             <geometry>
-                <box size="0.3 0.3 0.015"/>
+                <box size="0.045 0.3 0.0"/>
             </geometry>
         </collision>
     </link>
@@ -48,15 +27,15 @@
             <inertia ixx="0.03020833333333333" ixy="0.0" ixz="0.0" iyy="0.013541666666666669" iyz="0.0" izz="0.043333333333333335"/>
         </inertial>
         <visual>
-            <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+            <origin xyz="0.1 0.0 0.0125" rpy="0.0 0.0 0.0"/>
             <geometry>
-                <box size="0.3 0.3 0.015"/>
+                <box size="0.25 0.6 0.015"/>
             </geometry>
         </visual>
         <collision>
-            <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+            <origin xyz="0.1 0.0 0.0125" rpy="0.0 0.0 0.0"/>
             <geometry>
-                <box size="0.3 0.3 0.015"/>
+                <box size="0.25 0.6 0.015"/>
             </geometry>
         </collision>
     </link>
@@ -67,15 +46,15 @@
             <inertia ixx="0.03020833333333333" ixy="0.0" ixz="0.0" iyy="0.013541666666666669" iyz="0.0" izz="0.043333333333333335"/>
         </inertial>
         <visual>
-            <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+            <origin xyz="0.1 0.0 0.0125" rpy="0.0 0.0 0.0"/>
             <geometry>
-                <box size="0.3 0.3 0.025"/>
+                <box size="0.25 0.6 0.015"/>
             </geometry>
         </visual>
         <collision>
-            <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+            <origin xyz="0.1 0.0 0.0125" rpy="0.0 0.0 0.0"/>
             <geometry>
-                <box size="0.3 0.3 0.025"/>
+                <box size="0.25 0.6 0.015"/>
             </geometry>
         </collision>
     </link>
@@ -86,15 +65,15 @@
             <inertia ixx="0.03020833333333333" ixy="0.0" ixz="0.0" iyy="0.013541666666666669" iyz="0.0" izz="0.043333333333333335"/>
         </inertial>
         <visual>
-            <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+            <origin xyz="0.1 0.0 0.0125" rpy="0.0 0.0 0.0"/>
             <geometry>
-                <box size="0.3 0.3 0.025"/>
+                <box size="0.25 0.6 0.015"/>
             </geometry>
         </visual>
         <collision>
-            <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+            <origin xyz="0.1 0.0 0.0125" rpy="0.0 0.0 0.0"/>
             <geometry>
-                <box size="0.3 0.3 0.025"/>
+                <box size="0.25 0.6 0.015"/>
             </geometry>
         </collision>
     </link>
@@ -104,47 +83,42 @@
             <mass value="1"/>
             <inertia ixx="0.03020833333333333" ixy="0.0" ixz="0.0" iyy="0.013541666666666669" iyz="0.0" izz="0.043333333333333335"/>
         </inertial>
-       <visual>
-            <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+        <visual>
+            <origin xyz="0.1 0.0 0.0125" rpy="0.0 0.0 0.0"/>
             <geometry>
-                <box size="0.3 0.3 0.025"/>
+                <box size="0.25 0.6 0.015"/>
             </geometry>
         </visual>
         <collision>
-            <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+            <origin xyz="0.1 0.0 0.0125" rpy="0.0 0.0 0.0"/>
             <geometry>
-                <box size="0.3 0.3 0.025"/>
+                <box size="0.25 0.6 0.015"/>
             </geometry>
         </collision>
     </link>
-    <joint name="ground_joint" type="fixed">
-        <origin xyz="0 0 -0.5" rpy="0 0 0" />
-        <parent link="world" />
-        <child link="ground_link" />
-    </joint>
     <joint name="joint_s_0_s_1" type="fixed">
-        <origin xyz="0.6 0.3 0" rpy="0 0 0"/>
+        <origin xyz="0.95 0 0" rpy="0 0 0"/>
         <parent link="s_0"/>
         <child link="s_1"/>
     </joint>
     <joint name="joint_s_1_s_2" type="fixed">
-        <origin xyz="0.6 -0.3 0" rpy="0 0 0"/>
+        <origin xyz="0.95 0 0" rpy="0 0 0"/>
         <parent link="s_1"/>
         <child link="s_2"/>
     </joint>
     <joint name="joint_s_2_s_3" type="fixed">
-        <origin xyz="0.6 0.3 0" rpy="0 0 0"/>
+        <origin xyz="0.95 0 0" rpy="0 0 0"/>
         <parent link="s_2"/>
         <child link="s_3"/>
     </joint>
     <joint name="joint_s_3_s_4" type="fixed">
-        <origin xyz="0.6 -0.3 0.0" rpy="0 0 0"/>
+        <origin xyz="0.95 0 0.0" rpy="0 0 0"/>
         <parent link="s_3"/>
         <child link="s_4"/>
     </joint>
     <joint name="joint_world_s_0" type="fixed">
-        <origin xyz="0.6 -0.15 0.5" rpy="0 0 0"/>
-        <parent link="ground_link"/>
+        <origin xyz="0.92 -0.15 0" rpy="0 0 0"/>
+        <parent link="world"/>
         <child link="s_0"/>
-    </joint>    
+    </joint>
 </robot>

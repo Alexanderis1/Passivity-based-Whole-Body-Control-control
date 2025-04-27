@@ -1,0 +1,28 @@
+1/ Briefly go through the structure of the code
+
+In inverse_dynamic.py file
+--> Done
+2/ Discuss about the gain implementation?
+
+Do we need to invlove the value of M_k?
+-->Ask Elisa
+
+3/ Any idea of reducing the multiple calling of compute_task_space_matrices(J[task], M) 
+
+Computed MK as stack of M_k and store in a specific way to use it later??
+--> Alensandro will investigate it -> When (1-2 days from now)
+
+4/ Idea of the expriment to collect the data for the report
+
+Currently has an external push (while walking and while standing, collect the CoM curve)
+Create an uneven terrain!
+Idea: Weird Environment, a box!!
+Create an objet, and put it on the floor! (shape of the box TBD?)
+Then tune the gain of the controler (D_k, K_k) to achieve different environment
+
+--> Explore the way to create the environment together
+
+Compare with the given controller
+
+5/ Discuss about the report.
+--> An: Sketch the outline of the report first => send out end of this week

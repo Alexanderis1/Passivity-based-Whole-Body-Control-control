@@ -17,7 +17,7 @@ def compute_task_space_matrices(J, M):
 
 # 2 Step
 
-def compute_damping_stiffness(hrp4, J_k, alpha=10, beta=50.0):
+def compute_damping_stiffness(hrp4, J_k, alpha=50, beta=1.0):
     """
     Compute task-space damping (D_k) and stiffness (K_k) matrices using:
     D_k = alpha * M_k
@@ -31,14 +31,17 @@ def compute_damping_stiffness(hrp4, J_k, alpha=10, beta=50.0):
     """
     # Get the full-body inertia matrix (31x31)
     M = hrp4.getMassMatrix()
-
+    # size_M = M.shape
+    size_J_k = J_k.shape
+    # print("Jk shape", size_J_k[0],size_J_k[1])
+    Identity = np.identity(size_J_k[0])
     # Compute task-space inertia matrix M_k = (J_k * M^{-1} * J_k.T)^{-1}
     M_inv = np.linalg.inv(M)
     M_k = np.linalg.inv(J_k @ M_inv @ J_k.T)  # (n_k x n_k)
     # M_k = np.identity
     # Compute D_k and K_k
     D_k = alpha * M_k  # n_k x n_k
-    K_k = beta * M_k   # n_k x n_k
+    K_k = beta * Identity   # n_k x n_k
 
     return D_k, K_k
 
@@ -102,8 +105,11 @@ def compute_desired_force(tasks,pos_error,vel_error,ff,gravity_torque,current,J,
     #     (dim x dim)=    (dimx dim) x (dim x 30) x (30 x dim)
 
     
-            Dk,Kk=compute_damping_stiffness(robot, J[task], pos_gain[task], vel_gain[task])    #according to  Elisa function
-
+            Dk,Kk=compute_damping_stiffness(robot, J[task], vel_gain[task], pos_gain[task])    #according to  Elisa function
+            # print('Vel gain task k',Dk)
+            # print(is_positive_definite(Dk))
+            # print('Pos gain task k',Kk)
+            # print(is_positive_definite(Kk))
   
             f=       Tk@gravity_torque +      Mk@Qk@current['joint']['vel'] +          Mk @ ff[task]            + (Ck +Dk) @ vel_error[task] +Kk@ pos_error[task]
 #dimension:  dim  =    (dim x 30) * (30 x 1)    + (dimxdim) * (dim x 30) * (30 x 1) +  (dim x dim) x (dim x 1)   +(dim x dim) * (dim x 1)    + (dim x dim) + (dim x 30)
@@ -244,7 +250,13 @@ class QP_MPTC:
         return x_sol
     
 
-
+def is_positive_definite(matrix):
+    try:
+        # Attempt Cholesky decomposition
+        np.linalg.cholesky(matrix)
+        return True
+    except np.linalg.LinAlgError:
+        return False
 
 
 

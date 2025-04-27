@@ -41,7 +41,7 @@ class Hrp4Controller(dart.gui.osg.RealTimeWorldNode):
             'g': 9.81,
             'h': 0.72,
             'foot_size': 0.1,
-            'step_height': 0.02,
+            'step_height': 0.05,
             'ss_duration': 70,
             'ds_duration': 30,
             'world_time_step': world.getTimeStep(),
@@ -84,10 +84,11 @@ class Hrp4Controller(dart.gui.osg.RealTimeWorldNode):
         self.hrp4.setPosition(5, - (lsole_pos[2] + rsole_pos[2]) / 2.)
 
         # initialize state
-        self.initial = self.retrieve_state()
+        self.initial = self.retrieve_state_init()
         self.contact = 'lfoot' if self.params['first_swing'] == 'rfoot' else 'rfoot' # there is a dummy footstep
         self.desired = copy.deepcopy(self.initial)
-
+        self.pre_state = copy.deepcopy(self.initial)
+ 
         # selection matrix for redundant dofs
         redundant_dofs = [ \
             "NECK_Y", "NECK_P", \
@@ -150,15 +151,26 @@ class Hrp4Controller(dart.gui.osg.RealTimeWorldNode):
 
 
 
-
+ 
 
         
     def customPreStep(self):
         # create current and desired states
-        self.current = self.retrieve_state()
-        if  self.time >550 and self.time < 580:
-            force = np.array([-12, 0.0, -0.0])  
+        print(f"Time: {self.time}") 
+        self.current = self.retrieve_state(self.pre_state)
+        self.pre_state = copy.deepcopy(self.current)
+
+        if  self.time >550 and self.time < 600:
+            force = np.array([0, -10.0, -0.0])  
             self.base.addExtForce(force)
+        
+        if  self.time >780 and self.time < 820:
+            force = np.array([-10.0, 0, -0.0])  
+            self.torso.addExtForce(force)
+
+        if  self.time >1080 and self.time < 1130:
+            force = np.array([10.0, 0, -0.0])  
+            self.torso.addExtForce(force)
 
         # update kalman filter
         u = np.array([self.desired['zmp']['vel'][0], self.desired['zmp']['vel'][1], self.desired['zmp']['vel'][2]])
@@ -178,6 +190,9 @@ class Hrp4Controller(dart.gui.osg.RealTimeWorldNode):
         self.current['com']['vel'][2] = x_flt[7]
         self.current['zmp']['pos'][2] = x_flt[8]
 
+        print("Left foot position: ", self.current['lfoot']['pos'][3:6])
+        print("Right foot position: ", self.current['rfoot']['pos'][3:6])
+        print("ZMP_filtered: ", self.current['zmp']['pos'])
         # get references using mpc
         lip_state, contact = self.mpc.solve(self.current, self.time)
 
@@ -212,7 +227,7 @@ class Hrp4Controller(dart.gui.osg.RealTimeWorldNode):
 
         self.time += 1
 
-    def retrieve_state(self):
+    def retrieve_state(self,pre_state):
         # com and torso pose (orientation and position)
         com_position = self.hrp4.getCOM()
         torso_orientation = get_rotvec(self.hrp4.getBodyNode('torso').getTransform(withRespectTo=dart.dynamics.Frame.World(), inCoordinatesOf=dart.dynamics.Frame.World()).rotation())
@@ -239,7 +254,92 @@ class Hrp4Controller(dart.gui.osg.RealTimeWorldNode):
         force = np.zeros(3)
         for contact in world.getLastCollisionResult().getContacts():
             force += contact.force
+            # print("Contact point: ", contact.point)
+            # print("Contact force: ", contact.force)
+        print("Total contact force: ", force)
+        # compute zmp
+        zmp = np.zeros(3)
+        zmp[2] = com_position[2] - force[2] / (self.hrp4.getMass() * self.params['g'] / self.params['h'])
+        for contact in world.getLastCollisionResult().getContacts():
+            if contact.force[2] <= 0.1: continue
+            zmp[0] += (contact.point[0] * contact.force[2] / force[2] + (zmp[2] - contact.point[2]) * contact.force[0] / force[2])
+            zmp[1] += (contact.point[1] * contact.force[2] / force[2] + (zmp[2] - contact.point[2]) * contact.force[1] / force[2])
 
+        if force[2] <= 0.1: # threshold for when we lose contact
+            zmp = pre_state['zmp']['pos'] # FIXME: this should return previous measurement
+            print("Force is negative")
+            # print("pre_ZMP: ", zmp)
+        else:
+            # sometimes we get contact points that dont make sense, so we clip the ZMP close to the robot
+            midpoint = (l_foot_position + l_foot_position) / 2.
+            zmp[0] = np.clip(zmp[0], midpoint[0] - 0.3, midpoint[0] + 0.3)
+            zmp[1] = np.clip(zmp[1], midpoint[1] - 0.3, midpoint[1] + 0.3)
+            zmp[2] = np.clip(zmp[2], midpoint[2] - 0.3, midpoint[2] + 0.3)
+        print("ZMP: ", zmp)
+        Coriolis=self.pino.compute_C(self.hrp4)
+      
+        #print(Coriolis)
+        v=self.hrp4.getVelocities()
+
+        assert np.amax( Coriolis@v - self.hrp4.getCoriolisForces()) <= 1e-8 ,  "the coriolis term is different, there must be some error in computation" #just to be sure
+
+
+        # create state dict
+        return {
+            'lfoot': {'pos': left_foot_pose,
+                      'vel': l_foot_spatial_velocity,
+                      'acc': np.zeros(6)},
+            'rfoot': {'pos': right_foot_pose,
+                      'vel': r_foot_spatial_velocity,
+                      'acc': np.zeros(6)},
+            'com'  : {'pos': com_position,
+                      'vel': com_velocity,
+                      'acc': np.zeros(3)},
+            'torso': {'pos': torso_orientation,
+                      'vel': torso_angular_velocity,
+                      'acc': np.zeros(3)},
+            'base' : {'pos': base_orientation,
+                      'vel': base_angular_velocity,
+                      'acc': np.zeros(3)},
+            'joint': {'pos': self.hrp4.getPositions(),
+                      'vel': self.hrp4.getVelocities(),
+                      'acc': np.zeros(self.params['dof'])},
+            'zmp'  : {'pos': zmp,
+                      'vel': np.zeros(3),
+                      'acc': np.zeros(3)},
+            'Coriolis_matrix' : {'C':Coriolis}
+        }
+    
+    def retrieve_state_init(self):
+        # com and torso pose (orientation and position)
+        com_position = self.hrp4.getCOM()
+        torso_orientation = get_rotvec(self.hrp4.getBodyNode('torso').getTransform(withRespectTo=dart.dynamics.Frame.World(), inCoordinatesOf=dart.dynamics.Frame.World()).rotation())
+        base_orientation  = get_rotvec(self.hrp4.getBodyNode('body' ).getTransform(withRespectTo=dart.dynamics.Frame.World(), inCoordinatesOf=dart.dynamics.Frame.World()).rotation())
+
+        # feet poses (orientation and position)
+        l_foot_transform = self.lsole.getTransform(withRespectTo=dart.dynamics.Frame.World(), inCoordinatesOf=dart.dynamics.Frame.World())
+        l_foot_orientation = get_rotvec(l_foot_transform.rotation())
+        l_foot_position = l_foot_transform.translation()
+        left_foot_pose = np.hstack((l_foot_orientation, l_foot_position))
+        r_foot_transform = self.rsole.getTransform(withRespectTo=dart.dynamics.Frame.World(), inCoordinatesOf=dart.dynamics.Frame.World())
+        r_foot_orientation = get_rotvec(r_foot_transform.rotation())
+        r_foot_position = r_foot_transform.translation()
+        right_foot_pose = np.hstack((r_foot_orientation, r_foot_position))
+
+        # velocities
+        com_velocity = self.hrp4.getCOMLinearVelocity(relativeTo=dart.dynamics.Frame.World(), inCoordinatesOf=dart.dynamics.Frame.World())
+        torso_angular_velocity = self.hrp4.getBodyNode('torso').getAngularVelocity(relativeTo=dart.dynamics.Frame.World(), inCoordinatesOf=dart.dynamics.Frame.World())
+        base_angular_velocity = self.hrp4.getBodyNode('body').getAngularVelocity(relativeTo=dart.dynamics.Frame.World(), inCoordinatesOf=dart.dynamics.Frame.World())
+        l_foot_spatial_velocity = self.lsole.getSpatialVelocity(relativeTo=dart.dynamics.Frame.World(), inCoordinatesOf=dart.dynamics.Frame.World())
+        r_foot_spatial_velocity = self.rsole.getSpatialVelocity(relativeTo=dart.dynamics.Frame.World(), inCoordinatesOf=dart.dynamics.Frame.World())
+
+        # compute total contact force
+        force = np.zeros(3)
+        for contact in world.getLastCollisionResult().getContacts():
+            force += contact.force
+            print("Contact point: ", contact.point)
+            print("Contact force: ", contact.force)
+        print("Total contact force: ", force)
         # compute zmp
         zmp = np.zeros(3)
         zmp[2] = com_position[2] - force[2] / (self.hrp4.getMass() * self.params['g'] / self.params['h'])
@@ -250,6 +350,7 @@ class Hrp4Controller(dart.gui.osg.RealTimeWorldNode):
 
         if force[2] <= 0.1: # threshold for when we lose contact
             zmp = np.array([0., 0., 0.]) # FIXME: this should return previous measurement
+            print("Force is negative")
         else:
             # sometimes we get contact points that dont make sense, so we clip the ZMP close to the robot
             midpoint = (l_foot_position + l_foot_position) / 2.
@@ -298,8 +399,12 @@ if __name__ == "__main__":
     current_dir = os.path.dirname(os.path.abspath(__file__))
     hrp4   = urdfParser.parseSkeleton(os.path.join(current_dir, "urdf", "hrp4.urdf"))
     ground = urdfParser.parseSkeleton(os.path.join(current_dir, "urdf", "ground.urdf"))
+    #obstacles = urdfParser.parseSkeleton(os.path.join(current_dir, "urdf", "obstacles.urdf"))
+    box = urdfParser.parseSkeleton(os.path.join(current_dir, "urdf", "box.urdf"))
     world.addSkeleton(hrp4)
     world.addSkeleton(ground)
+    #world.addSkeleton(box)
+    # world.addSkeleton(obstacles)
     world.setGravity([0, 0, -9.81])
     world.setTimeStep(0.01)
 
