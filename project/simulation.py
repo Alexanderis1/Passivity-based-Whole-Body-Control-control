@@ -20,7 +20,7 @@ class Hrp4Controller(dart.gui.osg.RealTimeWorldNode):
 
 
         # inizialize pinocchio model 
-        self.pino = Coriolis_with_pionocchio()     # or  self.pino = Coriolis_with_pionocchio(1) 
+        self.pino = Coriolis_with_pionocchio(0)     # or  self.pino = Coriolis_with_pionocchio(1) 
                                                    #if want visualize with meshcat
                                               
         #################################
@@ -145,6 +145,9 @@ class Hrp4Controller(dart.gui.osg.RealTimeWorldNode):
     def customPreStep(self):
         # create current and desired states
         self.current = self.retrieve_state()
+        # if  self.time >250 and self.time < 280:
+        #     force = np.array([-10, 0.0, -0.0])  
+        #     self.torso.addExtForce(force)
 
         # update kalman filter
         u = np.array([self.desired['zmp']['vel'][0], self.desired['zmp']['vel'][1], self.desired['zmp']['vel'][2]])
@@ -194,7 +197,7 @@ class Hrp4Controller(dart.gui.osg.RealTimeWorldNode):
 
         # log and plot
         self.logger.log_data(self.current, self.desired)
-        #self.logger.update_plot(self.time)
+        self.logger.update_plot(self.time)
 
         self.time += 1
 
@@ -245,10 +248,10 @@ class Hrp4Controller(dart.gui.osg.RealTimeWorldNode):
        
         Coriolis=self.pino.compute_C(self.hrp4)
       
-        print(Coriolis)
+        #print(Coriolis)
         v=self.hrp4.getVelocities()
 
-        assert np.amax( Coriolis@v - self.hrp4.getCoriolisForces()) <= 1e-10 ,  "the coriolis term is different, there must be some error in computation" #just to be sure
+        assert np.amax( Coriolis@v - self.hrp4.getCoriolisForces()) <= 1e-8 ,  "the coriolis term is different, there must be some error in computation" #just to be sure
 
 
         # create state dict

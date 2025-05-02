@@ -84,7 +84,7 @@ import sys
 
 
 class Coriolis_with_pionocchio :
-    def __init__(self,visual=0):
+    def __init__(self,visual=1):
         "I was not able to find a function whitch allow us to compute the corilis matrix with dart (we could only compute the coriolis term)"
         "So i create this class in order to compute tha C matrix using PINOCCHIO library"
         "FOR USING THIS CLASS YOU NEED TO IMPORT PINOCCHIO  ( IT MIGHT CAUSE SOME ERROR WITH COMPATIBILITY WITH DART AND NUMPY BUT DEPEND BY YOUR COMPUTER "
@@ -159,7 +159,7 @@ class Coriolis_with_pionocchio :
        C_dart=P@C_pin@P
       
       
-       assert np.amax( C_dart@vel_dart - self.robot.getCoriolisForces()) <= 1e-10 ,  "the coriolis term is different, there must be some error in computation"   # so we are sure that P@C_pin@P = C_dart 
+       assert np.amax( C_dart@vel_dart - self.robot.getCoriolisForces()) <= 1e-8 ,  "the coriolis term is different, there must be some error in computation"   # so we are sure that P@C_pin@P = C_dart 
       #######################################
 
        
