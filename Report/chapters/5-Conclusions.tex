@@ -1,0 +1,14 @@
+\documentclass[main.tex]{subfiles}
+
+\begin{document}
+\section{Conclusions}
+In this project, we have studied the bilateral control under the position-position feedback teleoperation architecture and analyzed both stability and transparency behavior. We have also successfully set up the validation experiments based on two different manipulators, which are the physical Geomagic Touch haptic device as the master and the virtual KUKA LBR4+ in CoppeliaSim environment as the slave.\\
+Further developments from the project can be listed out as below:
+\begin{itemize}
+    \item Developing the entire system in one programming environment for the optimization both on computation and communication.
+    \item Developing a GUI to allow users to easily tune the gains of the architecture during simulation.
+    \item Adding a force sensor to the haptic device to be able to assign the master Cartesian inertia matrix $M_m$.
+    \item Implementing other bilateral architectures, for example, 4-channel architecture.
+    \item Including a modeling of the delay between the two sides of the architecture.
+\end{itemize}
+\end{document}
