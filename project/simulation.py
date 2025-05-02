@@ -9,6 +9,7 @@ import inverse_dynamics as id
 import filter
 import foot_trajectory_generator as ftg
 from logger import Logger
+from logger2 import Logger2
 from function_pinocchio import *
 
 class Hrp4Controller(dart.gui.osg.RealTimeWorldNode):
@@ -133,6 +134,9 @@ class Hrp4Controller(dart.gui.osg.RealTimeWorldNode):
         # initialize logger and plots
         self.logger = Logger(self.initial)
         self.logger.initialize_plot(frequency=10)
+        self.logger2 = Logger2()
+        self.logger2.initialize_plot(frequency=10)
+       
 
        
         
@@ -145,9 +149,10 @@ class Hrp4Controller(dart.gui.osg.RealTimeWorldNode):
     def customPreStep(self):
         # create current and desired states
         self.current = self.retrieve_state()
-        # if  self.time >250 and self.time < 280:
-        #     force = np.array([-10, 0.0, -0.0])  
-        #     self.torso.addExtForce(force)
+        if  self.time >550 and self.time < 580:
+        #if  self.time >350 and self.time < 380:
+            force = np.array([-10, 0.0, -0.0])  
+            self.torso.addExtForce(force)
 
         # update kalman filter
         u = np.array([self.desired['zmp']['vel'][0], self.desired['zmp']['vel'][1], self.desired['zmp']['vel'][2]])
@@ -198,6 +203,8 @@ class Hrp4Controller(dart.gui.osg.RealTimeWorldNode):
         # log and plot
         self.logger.log_data(self.current, self.desired)
         self.logger.update_plot(self.time)
+        self.logger2.log_data(self.hrp4.getPosition(28),self.hrp4.getPosition(22))
+        self.logger2.update_plot(self.time)
 
         self.time += 1
 
