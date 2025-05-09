@@ -4,8 +4,9 @@ from utils import *
 from functions import *
 
 class InverseDynamics:
-    def __init__(self, robot, redundant_dofs,foot_size=0.1, µ=0.5,recover=True):
-        self.recover=recover
+    def __init__(self, robot, redundant_dofs,foot_size=0.1, µ=0.5,recover_l=True,recover_r=True):
+        self.recover_r=recover_r
+        self.recover_l=recover_l
         self.robot = robot
         self.dofs = self.robot.getNumDofs()
         self.d = foot_size / 2.
@@ -39,10 +40,10 @@ class InverseDynamics:
                 self.redundant[j,i]=1          ###############################       we need self.redundant cause we want J['joint'] to be full rank
                 j+=1                           ############################
        # print(self.redundant)  
-        self.ankle_l=np.zeros((1,self.dofs))
-        self.ankle_r=np.zeros((1,self.dofs))
-        self.ankle_l[0,22]=1
-        self.ankle_r[0,28]=1                 
+        self.knee_l=np.zeros((1,self.dofs))
+        self.knee_r=np.zeros((1,self.dofs))
+        self.knee_l[0,21]=1
+        self.knee_r[0,27]=1                 
 
     def get_joint_torques(self, desired, current, contact):
         contact_l = contact == 'lfoot'  or contact == 'ds'
@@ -55,10 +56,10 @@ class InverseDynamics:
         base  = self.robot.getBodyNode('body')
 
         # weights and gains
-        tasks = ['lfoot', 'rfoot', 'com', 'torso', 'base', 'joints','ankle_l','ankle_r']
-        weights   = {'lfoot':  1., 'rfoot':  1., 'com':  1., 'torso': 1., 'base': 1., 'joints': 1.,'ankle_l':0,'ankle_r':0}
-        pos_gains = {'lfoot': 10., 'rfoot': 10., 'com':  5., 'torso': 1., 'base': 1., 'joints': 1.,'ankle_l':2,'ankle_r':2 }
-        vel_gains = {'lfoot': 10., 'rfoot': 10., 'com': 10., 'torso': 2., 'base': 2., 'joints': 2.,'ankle_l':1,'ankle_r':1}
+        tasks = ['lfoot', 'rfoot', 'com', 'torso', 'base', 'joints','knee_l','knee_r']
+        weights   = {'lfoot':  1., 'rfoot':  1., 'com':  1., 'torso': 1., 'base': 1., 'joints': 1.,'knee_l':0,'knee_r':0}
+        pos_gains = {'lfoot': 10., 'rfoot': 10., 'com':  1., 'torso': 1., 'base': 1., 'joints': 1.,'knee_l':2,'knee_r':1 }
+        vel_gains = {'lfoot': 10., 'rfoot': 10., 'com': 2., 'torso': 2., 'base': 2., 'joints': 2.,'knee_l':2,'knee_r':2}
 
         # jacobians
         J = {'lfoot' : self.robot.getJacobian(lsole,        inCoordinatesOf=dart.dynamics.Frame.World()),
@@ -67,8 +68,8 @@ class InverseDynamics:
              'torso' : self.robot.getAngularJacobian(torso, inCoordinatesOf=dart.dynamics.Frame.World()),
              'base'  : self.robot.getAngularJacobian(base,  inCoordinatesOf=dart.dynamics.Frame.World()),
              'joints': self.redundant,
-             'ankle_l' : self.ankle_l,
-             'ankle_r' : self.ankle_r}
+             'knee_l' : self.knee_l,
+             'knee_r' : self.knee_r}
 
         # jacobians derivatives
         Jdot = {'lfoot' : self.robot.getJacobianClassicDeriv(lsole, inCoordinatesOf=dart.dynamics.Frame.World()),
@@ -77,8 +78,8 @@ class InverseDynamics:
                 'torso' : self.robot.getAngularJacobianDeriv(torso, inCoordinatesOf=dart.dynamics.Frame.World()),
                 'base'  : self.robot.getAngularJacobianDeriv(base,  inCoordinatesOf=dart.dynamics.Frame.World()),
                 'joints': np.zeros((len(self.redundant),self.dofs)),
-                'ankle_l' : np.zeros((1,self.dofs)),
-                'ankle_r' : np.zeros((1,self.dofs))} 
+                'knee_l' : np.zeros((1,self.dofs)),
+                'knee_r' : np.zeros((1,self.dofs))} 
 
         # feedforward terms
         ff = {'lfoot' : desired['lfoot']['acc'],
@@ -87,8 +88,8 @@ class InverseDynamics:
               'torso' : desired['torso']['acc'],
               'base'  : desired['base']['acc'],
               'joints': self.redundant@desired['joint']['acc'],
-              'ankle_l': self.ankle_l@desired['joint']['acc'],
-              'ankle_r': self.ankle_r@desired['joint']['acc']} 
+              'knee_l': self.knee_l@desired['joint']['acc'],
+              'knee_r': self.knee_r@desired['joint']['acc']} 
 
         # error vectors
         pos_error = {'lfoot' : pose_difference(desired['lfoot']['pos'] , current['lfoot']['pos'] ),
@@ -97,8 +98,8 @@ class InverseDynamics:
                      'torso' : rotation_vector_difference(desired['torso']['pos'], current['torso']['pos']),
                      'base'  : rotation_vector_difference(desired['base']['pos'] , current['base']['pos'] ),
                      'joints': self.redundant@(desired['joint']['pos'] - current['joint']['pos']),
-                     'ankle_l' : -0.5-J['ankle_l']@desired['joint']['acc'],
-                     'ankle_r' : -0.5-J['ankle_r']@desired['joint']['acc']} 
+                     'knee_l' : 1-J['knee_l']@current['joint']['pos'],
+                     'knee_r' : 1-J['knee_r']@current['joint']['pos']} 
 
         # velocity error vectors
         vel_error = {'lfoot' : desired['lfoot']['vel'] - current['lfoot']['vel'],
@@ -107,25 +108,30 @@ class InverseDynamics:
                      'torso' : desired['torso']['vel'] - current['torso']['vel'],
                      'base'  : desired['base']['vel']  - current['base']['vel'],
                      'joints': self.redundant@(desired['joint']['vel'] - current['joint']['vel']),
-                     'ankle_l': pos_error['ankle_l'],
-                     'ankle_r': pos_error['ankle_r']} 
+                     'knee_l': J['knee_l']@(desired['joint']['vel'] - current['joint']['vel']),
+                     'knee_r': J['knee_r']@(desired['joint']['vel'] - current['joint']['vel'])} 
         
         
                
-        if (self.robot.getPosition(22) < -0.15 and self.robot.getPosition(28)< -0.15) and self.recover==False :
-            self.recover = True
+        if self.robot.getPosition(21) > 0 and self.recover_l==False  :
+           
+            self.recover_l=True
+            print('recover succeded')
+        if self.robot.getPosition(27) > 0 and self.recover_r==False  :
+           
+            self.recover_r=True
             print('recover succeded')
         
-        if self.robot.getPosition(22) > 0 or self.recover==False :
-            weights['ankle_l'] = 3
-            self.recover=False
+        if self.robot.getPosition(21) < 0.5 or self.recover_l==False :
+            weights['knee_l'] = 1
+            self.recover_l=False
             print('recover left .....')
-            print(self.robot.getPosition(22),'left')
-        if self.robot.getPosition(28) > 0 or self.recover==False :
-            weights['ankle_r'] = 3
-            self.recover=False
+            print(self.robot.getPosition(21),'left')
+        if self.robot.getPosition(27) < 0.5 or self.recover_r==False :
+            weights['knee_r'] = 1
+            self.recover_r=False
             print('recover right .....')
-            print(self.robot.getPosition(22),'right')
+            print(self.robot.getPosition(27),'right')
 
 
         A_ineq2=np.zeros((self.n_ineq_constraints,36))

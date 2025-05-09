@@ -35,7 +35,7 @@ class Logger2():
         for ax in self.ax:
             ax.legend()
             
-        self.fig.suptitle("Ankle joint value", fontsize=14)
+        self.fig.suptitle("Knee joint value", fontsize=14)
 
 
 

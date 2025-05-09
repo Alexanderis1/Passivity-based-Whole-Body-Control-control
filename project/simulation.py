@@ -65,6 +65,7 @@ class Hrp4Controller(dart.gui.osg.RealTimeWorldNode):
 
         for joint_name, value in initial_configuration.items():
             self.hrp4.setPosition(self.hrp4.getDof(joint_name).getIndexInSkeleton(), value * np.pi / 180.)
+            print(joint_name,self.hrp4.getDof(joint_name).getIndexInSkeleton())
 
         # position the robot on the ground
         lsole_pos = self.lsole.getTransform(withRespectTo=dart.dynamics.Frame.World(), inCoordinatesOf=dart.dynamics.Frame.World()).translation()
@@ -149,10 +150,11 @@ class Hrp4Controller(dart.gui.osg.RealTimeWorldNode):
     def customPreStep(self):
         # create current and desired states
         self.current = self.retrieve_state()
-        if  self.time >550 and self.time < 580:
-        #if  self.time >350 and self.time < 380:
-            force = np.array([-10, 0.0, -0.0])  
-            self.torso.addExtForce(force)
+       # if  self.time >550 and self.time < 580:
+        if  self.time >750 and self.time < 780:
+            force = np.array([10, 10.0, -0.0])  
+            self.base.addExtForce(force)
+            #self.torso.addExtForce(force)
 
         # update kalman filter
         u = np.array([self.desired['zmp']['vel'][0], self.desired['zmp']['vel'][1], self.desired['zmp']['vel'][2]])
@@ -203,7 +205,7 @@ class Hrp4Controller(dart.gui.osg.RealTimeWorldNode):
         # log and plot
         self.logger.log_data(self.current, self.desired)
         self.logger.update_plot(self.time)
-        self.logger2.log_data(self.hrp4.getPosition(28),self.hrp4.getPosition(22))
+        self.logger2.log_data(self.hrp4.getPosition(27),self.hrp4.getPosition(21))
         self.logger2.update_plot(self.time)
 
         self.time += 1
